@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="coi-serviceworker.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>High-Performance WebGL 2.0</title>
+    <title>test</title>
     <style>
         body {
             margin: 0;
@@ -38,11 +39,49 @@
             font-weight: bold;
         }
 
-        canvas {
-            width: 100vw;
-            height: 100vh;
-            display: block;
+        #game-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
         }
+
+        #canvas {
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            image-rendering: pixelated;
+        }
+
+        #mobile-controls {
+            position: absolute;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            display: none;
+            z-index: 5;
+        }
+
+        .touch-btn {
+            position: absolute;
+            width: 60px; height: 60px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: auto;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            touch-action: none;
+        }
+        .touch-btn:active { background: rgba(255, 255, 255, 0.4); }
+        
+        #btn-left { bottom: 30px; left: 30px; }
+        #btn-right { bottom: 30px; left: 110px; }
+        #btn-jump { bottom: 30px; right: 30px; }
+        #btn-fire { bottom: 110px; right: 30px; }
 
         #loader {
             position: absolute;
@@ -60,33 +99,62 @@
     
     <div id="telemetry" style="display: none;">
         <div class="telemetry-row"><span>FPS:</span> <span id="fps" class="telemetry-val">--</span></div>
-        <div class="telemetry-row"><span>CPU Time:</span> <span id="cpu" class="telemetry-val">-- ms</span></div>
+        <div class="telemetry-row"><span>Render Time:</span> <span id="cpu" class="telemetry-val">-- ms</span></div>
+        <div class="telemetry-row"><span>Sim Time:</span> <span id="sim" class="telemetry-val">-- ms</span></div>
         <div class="telemetry-row"><span>Resolution:</span> <span id="res" class="telemetry-val">--</span></div>
     </div>
 
-    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="game-container">
+        <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+        <div id="mobile-controls">
+            <div id="btn-left" class="touch-btn">←</div>
+            <div id="btn-right" class="touch-btn">→</div>
+            <div id="btn-jump" class="touch-btn">↑</div>
+            <div id="btn-fire" class="touch-btn">F</div>
+        </div>
+    </div>
 
     <script>
         const fpsEl = document.getElementById('fps');
         const cpuEl = document.getElementById('cpu');
+        const simEl = document.getElementById('sim');
         const resEl = document.getElementById('res');
         const telDiv = document.getElementById('telemetry');
         
-        window.updateTelemetry = function(fps, cpu, w, h) {
+        window.updateTelemetry = function(fps, cpu, sim, w, h) {
             fpsEl.innerText = fps;
             cpuEl.innerText = cpu.toFixed(3) + " ms";
+            simEl.innerText = sim.toFixed(3) + " ms";
             resEl.innerText = `${w}x${h}`;
             if (telDiv.style.display === 'none') telDiv.style.display = 'block';
         };
+
+        function hookTouch(id, keyCode) {
+            const el = document.getElementById(id);
+            if(!el) return;
+            const press = (e) => { e.preventDefault(); if(Module && Module._set_key) Module._set_key(keyCode, true); };
+            const release = (e) => { e.preventDefault(); if(Module && Module._set_key) Module._set_key(keyCode, false); };
+            el.addEventListener('touchstart', press, {passive: false});
+            el.addEventListener('touchend', release, {passive: false});
+            el.addEventListener('touchcancel', release, {passive: false});
+        }
 
         var Module = {
             canvas: document.getElementById('canvas'),
             onRuntimeInitialized: function() {
                 document.getElementById('loader').style.display = 'none';
                 console.log("Wasm Engine Initialized");
+                
+                if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                    document.getElementById('mobile-controls').style.display = 'block';
+                    hookTouch('btn-left', 65); 
+                    hookTouch('btn-right', 68); 
+                    hookTouch('btn-jump', 87);
+                    hookTouch('btn-fire', 32);
+                }
             }
         };
     </script>
-    <script async src="bgfx_app.js"></script>
+    <script async src="engine.js"></script>
 </body>
 </html>
