@@ -82,6 +82,8 @@
         #btn-right { bottom: 30px; left: 110px; }
         #btn-jump { bottom: 30px; right: 30px; }
         #btn-fire { bottom: 110px; right: 30px; }
+        #btn-wep1 { top: 30px; left: 30px; }
+        #btn-wep2 { top: 30px; left: 110px; }
 
         #loader {
             position: absolute;
@@ -111,6 +113,8 @@
             <div id="btn-right" class="touch-btn">→</div>
             <div id="btn-jump" class="touch-btn">↑</div>
             <div id="btn-fire" class="touch-btn">F</div>
+            <div id="btn-wep1" class="touch-btn">W1</div>
+            <div id="btn-wep2" class="touch-btn">W2</div>
         </div>
     </div>
 
@@ -161,6 +165,8 @@
                     hookTouch('btn-right', 68); 
                     hookTouch('btn-jump', 87);
                     hookTouch('btn-fire', 32);
+                    hookTouch('btn-wep1', 49); 
+                    hookTouch('btn-wep2', 50); 
                 }
             }
         };
