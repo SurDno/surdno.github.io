@@ -154,7 +154,15 @@
                 }
             }
         };
+        
+        if (window.crossOriginIsolated) {
+            let script = document.createElement('script');
+            script.src = "engine.js";
+            document.body.appendChild(script);
+        } else {
+            document.getElementById('loader').innerText = "Applying security headers... (Reloading)";
+            console.warn("crossOriginIsolated is false. Waiting for coi-serviceworker to reload the page...");
+        }
     </script>
-    <script async src="engine.js"></script>
 </body>
 </html>
