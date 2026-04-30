@@ -141,6 +141,16 @@
 
         var Module = {
             canvas: document.getElementById('canvas'),
+            printErr: function(text) {
+                console.error(text);
+                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                if (text.includes("wasm") || text.includes("error") || text.includes("Exception") || text.includes("Aborted")) {
+                    const loader = document.getElementById('loader');
+                    loader.style.color = '#ff4444';
+                    loader.style.display = 'block';
+                    loader.innerHTML += '<br>' + text;
+                }
+            },
             onRuntimeInitialized: function() {
                 document.getElementById('loader').style.display = 'none';
                 console.log("Wasm Engine Initialized");
@@ -155,6 +165,7 @@
             }
         };
         
+        // Only inject the WASM engine if the Service Worker has successfully applied the COOP/COEP headers!
         if (window.crossOriginIsolated) {
             let script = document.createElement('script');
             script.src = "engine.js";
