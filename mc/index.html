@@ -58,6 +58,7 @@
             border-radius: 50%;
             touch-action: none;
             z-index: 200;
+            display: none; /* Hide by default */
         }
         #joystick-knob {
             position: absolute;
@@ -156,6 +157,8 @@
         let lookId = null;
         let lastLookX = 0;
         let lastLookY = 0;
+        let touchStartTime = 0;
+        let touchStartId = null;
 
         function handleJoystick(e) {
             const rect = joystickBase.getBoundingClientRect();
@@ -179,6 +182,7 @@
         }
 
         window.addEventListener('touchstart', (e) => {
+            joystickBase.style.display = 'block'; // Show on first touch
             if (canvas.requestPointerLock) canvas.requestPointerLock();
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
@@ -193,6 +197,8 @@
                         lookId = t.identifier;
                         lastLookX = t.clientX;
                         lastLookY = t.clientY;
+                        touchStartTime = Date.now();
+                        touchStartId = t.identifier;
                     }
                 }
             }
@@ -208,8 +214,7 @@
                 const dy = lookTouch.clientY - lastLookY;
                 lastLookX = lookTouch.clientX;
                 lastLookY = lookTouch.clientY;
-                // We don't have a direct C++ function for touch look, but we can simulate mouse move
-                // or just wait for the C++ touch callback. Actually, let's just pass it to C++.
+                if (Module._handleMobileLook) Module._handleMobileLook(dx, dy);
             }
         }, { passive: false });
 
@@ -221,7 +226,12 @@
                     joystickKnob.style.transform = `translate(-50%, -50%)`;
                     if (Module._setJoystick) Module._setJoystick(0, 0);
                 } else if (t.identifier === lookId) {
+                    if (t.identifier === touchStartId) {
+                        const duration = Date.now() - touchStartTime;
+                        if (Module._handleRaycast) Module._handleRaycast(duration < 500);
+                    }
                     lookId = null;
+                    touchStartId = null;
                 }
             }
         });
