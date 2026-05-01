@@ -171,15 +171,9 @@
             }
         };
         
-        // Only inject the WASM engine if the Service Worker has successfully applied the COOP/COEP headers!
-        if (window.crossOriginIsolated) {
-            let script = document.createElement('script');
-            script.src = "engine.js";
-            document.body.appendChild(script);
-        } else {
-            document.getElementById('loader').innerText = "Applying security headers... (Reloading)";
-            console.warn("crossOriginIsolated is false. Waiting for coi-serviceworker to reload the page...");
-        }
+        let script = document.createElement('script');
+        script.src = "engine.js";
+        document.body.appendChild(script);
     </script>
 </body>
 </html>
