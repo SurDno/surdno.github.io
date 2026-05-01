@@ -115,6 +115,7 @@
 
     <div id="telemetry" style="display: none;">
         <div class="telemetry-row"><span>FPS:</span> <span id="fps" class="telemetry-val">--</span></div>
+        <div class="telemetry-row"><span>Frame Delta:</span> <span id="frame-delta" class="telemetry-val">-- ms</span></div>
         <div class="telemetry-row"><span>CPU Total:</span> <span id="cpu-total" class="telemetry-val">-- ms</span></div>
         <div class="telemetry-row"><span>Render:</span> <span id="cpu-render" class="telemetry-val">-- ms</span></div>
         <div class="telemetry-row"><span>GPU Total:</span> <span id="gpu-total" class="telemetry-val">-- ms</span></div>
@@ -228,10 +229,11 @@
             canvas.requestPointerLock();
         });
 
-        window.updateTelemetry = (fps, cpuTotal, cpuRender, gpuTotal, w, h) => {
+        window.updateTelemetry = (fps, delta, cpuTotal, cpuRender, gpuTotal, w, h) => {
             const tel = document.getElementById('telemetry');
             if (tel.style.display === 'none') tel.style.display = 'block';
             document.getElementById('fps').textContent = fps;
+            document.getElementById('frame-delta').textContent = delta.toFixed(2) + ' ms';
             document.getElementById('cpu-total').textContent = cpuTotal.toFixed(2) + ' ms';
             document.getElementById('cpu-render').textContent = cpuRender.toFixed(2) + ' ms';
             document.getElementById('gpu-total').textContent = gpuTotal.toFixed(2) + ' ms';
@@ -248,6 +250,13 @@
                     console.log(text);
                 };
             })(),
+            printErr: function(text) {
+                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                console.error(text);
+                if (text.includes('Exception thrown') || text.includes('Error')) {
+                    showError(`[Runtime Error] ${text}`);
+                }
+            },
             canvas: (function() {
                 var canvas = document.getElementById('canvas');
                 canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
@@ -270,6 +279,9 @@
                 } else {
                     statusElement.style.display = 'block';
                 }
+                if (text.includes('Exception thrown')) {
+                    showError(`[Module Status] ${text}`);
+                }
             },
             totalDependencies: 0,
             monitorRunDependencies: function(left) {
@@ -278,8 +290,9 @@
             }
         };
         Module.setStatus('Downloading...');
-        window.onerror = function() {
+        window.onerror = function(msg) {
             Module.setStatus('Exception thrown, see JavaScript console');
+            showError(`[Global Exception] ${msg}`);
             Module.setStatus = function(text) {
                 if (text) Module.printErr('[post-exception status] ' + text);
             };
