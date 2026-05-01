@@ -86,12 +86,38 @@
             justify-content: center;
             text-shadow: 1px 1px 2px black;
         }
+        #error-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(139, 0, 0, 0.95);
+            color: #fff;
+            padding: 40px;
+            box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
+            display: none;
+            z-index: 10000;
+            overflow-y: auto;
+        }
+        #error-overlay h1 { color: #ffeb3b; margin-top: 0; }
+        #error-overlay pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; white-space: pre-wrap; }
     </style>
 </head>
 <body>
+    <div id="error-overlay">
+        <h1>CRITICAL ERROR</h1>
+        <p>The application has crashed. Technical details below:</p>
+        <pre id="error-text"></pre>
+        <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer;">Reload Application</button>
+    </div>
+
     <div id="telemetry" style="display: none;">
         <div class="telemetry-row"><span>FPS:</span> <span id="fps" class="telemetry-val">--</span></div>
-        <div class="telemetry-row"><span>Render Time:</span> <span id="cpu" class="telemetry-val">-- ms</span></div>
+        <div class="telemetry-row"><span>CPU Total:</span> <span id="cpu-total" class="telemetry-val">-- ms</span></div>
+        <div class="telemetry-row"><span>Render:</span> <span id="cpu-render" class="telemetry-val">-- ms</span></div>
+        <div class="telemetry-row"><span>GPU Total:</span> <span id="gpu-total" class="telemetry-val">-- ms</span></div>
         <div class="telemetry-row"><span>Resolution:</span> <span id="res" class="telemetry-val">--</span></div>
     </div>
     
@@ -105,6 +131,20 @@
     <div id="status">Click/Touch to Start</div>
 
     <script type='text/javascript'>
+        function showError(msg) {
+            document.getElementById('error-overlay').style.display = 'block';
+            document.getElementById('error-text').textContent += msg + '\n';
+        }
+
+        window.onerror = (msg, url, line, col, error) => {
+            showError(`[JS Error] ${msg}\nAt: ${url}:${line}:${col}\n${error ? error.stack : ''}`);
+            return false;
+        };
+
+        window.onunhandledrejection = (event) => {
+            showError(`[Promise Rejection] ${event.reason}`);
+        };
+
         const canvas = document.getElementById('canvas');
         const joystickBase = document.getElementById('joystick-base');
         const joystickKnob = document.getElementById('joystick-knob');
@@ -188,16 +228,14 @@
             canvas.requestPointerLock();
         });
 
-        const fpsEl = document.getElementById('fps');
-        const cpuEl = document.getElementById('cpu');
-        const resEl = document.getElementById('res');
-        const telDiv = document.getElementById('telemetry');
-        
-        window.updateTelemetry = function(fps, cpu, w, h) {
-            fpsEl.innerText = fps;
-            cpuEl.innerText = cpu.toFixed(3) + " ms";
-            resEl.innerText = `${w}x${h}`;
-            if (telDiv.style.display === 'none') telDiv.style.display = 'block';
+        window.updateTelemetry = (fps, cpuTotal, cpuRender, gpuTotal, w, h) => {
+            const tel = document.getElementById('telemetry');
+            if (tel.style.display === 'none') tel.style.display = 'block';
+            document.getElementById('fps').textContent = fps;
+            document.getElementById('cpu-total').textContent = cpuTotal.toFixed(2) + ' ms';
+            document.getElementById('cpu-render').textContent = cpuRender.toFixed(2) + ' ms';
+            document.getElementById('gpu-total').textContent = gpuTotal.toFixed(2) + ' ms';
+            document.getElementById('res').textContent = `${w}x${h}`;
         };
 
         var statusElement = document.getElementById('status');

@@ -103,6 +103,7 @@
         <div class="telemetry-row"><span>FPS:</span> <span id="fps" class="telemetry-val">--</span></div>
         <div class="telemetry-row"><span>Render Time:</span> <span id="cpu" class="telemetry-val">-- ms</span></div>
         <div class="telemetry-row"><span>Sim Time:</span> <span id="sim" class="telemetry-val">-- ms</span></div>
+        <div class="telemetry-row"><span>GPU Time:</span> <span id="gpu" class="telemetry-val">-- ms</span></div>
         <div class="telemetry-row"><span>Resolution:</span> <span id="res" class="telemetry-val">--</span></div>
     </div>
 
@@ -122,13 +123,15 @@
         const fpsEl = document.getElementById('fps');
         const cpuEl = document.getElementById('cpu');
         const simEl = document.getElementById('sim');
+        const gpuEl = document.getElementById('gpu');
         const resEl = document.getElementById('res');
         const telDiv = document.getElementById('telemetry');
         
-        window.updateTelemetry = function(fps, cpu, sim, w, h) {
+        window.updateTelemetry = function(fps, cpu, sim, w, h, gpu) {
             fpsEl.innerText = fps;
             cpuEl.innerText = cpu.toFixed(3) + " ms";
             simEl.innerText = sim.toFixed(3) + " ms";
+            if (gpu !== undefined) gpuEl.innerText = gpu.toFixed(3) + " ms";
             resEl.innerText = `${w}x${h}`;
             if (telDiv.style.display === 'none') telDiv.style.display = 'block';
         };
