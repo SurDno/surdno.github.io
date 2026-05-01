@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Web Mini Minecraft</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: black;
+            color: white;
+            font-family: sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        #status {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #aaa;
+            pointer-events: none;
+        }
+        #telemetry {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            color: #4CAF50;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            pointer-events: none;
+            z-index: 100;
+            border: 1px solid #333;
+            min-width: 180px;
+            font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+        }
+        .telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        #joystick-base {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            touch-action: none;
+            z-index: 200;
+        }
+        #joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+</head>
+<body>
+    <div id="telemetry" style="display: none;">
+        <div class="telemetry-row"><span>FPS:</span> <span id="fps" class="telemetry-val">--</span></div>
+        <div class="telemetry-row"><span>Render Time:</span> <span id="cpu" class="telemetry-val">-- ms</span></div>
+        <div class="telemetry-row"><span>Resolution:</span> <span id="res" class="telemetry-val">--</span></div>
+    </div>
+    
+    <div id="crosshair">+</div>
+
+    <div id="joystick-base">
+        <div id="joystick-knob"></div>
+    </div>
+
+    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="status">Click/Touch to Start</div>
+
+    <script type='text/javascript'>
+        const canvas = document.getElementById('canvas');
+        const joystickBase = document.getElementById('joystick-base');
+        const joystickKnob = document.getElementById('joystick-knob');
+        
+        let joyActive = false;
+        let joyId = null;
+        let lookId = null;
+        let lastLookX = 0;
+        let lastLookY = 0;
+
+        function handleJoystick(e) {
+            const rect = joystickBase.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const touch = Array.from(e.touches).find(t => t.identifier === joyId);
+            if (!touch) return;
+
+            let dx = touch.clientX - centerX;
+            let dy = touch.clientY - centerY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const maxDist = rect.width / 2;
+
+            if (dist > maxDist) {
+                dx *= maxDist / dist;
+                dy *= maxDist / dist;
+            }
+
+            joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            if (Module._setJoystick) Module._setJoystick(dx / maxDist, dy / maxDist);
+        }
+
+        window.addEventListener('touchstart', (e) => {
+            canvas.requestPointerLock();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                const rect = joystickBase.getBoundingClientRect();
+                if (t.clientX >= rect.left && t.clientX <= rect.right && t.clientY >= rect.top && t.clientY <= rect.bottom) {
+                    if (joyId === null) {
+                        joyId = t.identifier;
+                        handleJoystick(e);
+                    }
+                } else {
+                    if (lookId === null) {
+                        lookId = t.identifier;
+                        lastLookX = t.clientX;
+                        lastLookY = t.clientY;
+                    }
+                }
+            }
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            handleJoystick(e);
+            
+            const lookTouch = Array.from(e.touches).find(t => t.identifier === lookId);
+            if (lookTouch) {
+                const dx = lookTouch.clientX - lastLookX;
+                const dy = lookTouch.clientY - lastLookY;
+                lastLookX = lookTouch.clientX;
+                lastLookY = lookTouch.clientY;
+                // We don't have a direct C++ function for touch look, but we can simulate mouse move
+                // or just wait for the C++ touch callback. Actually, let's just pass it to C++.
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.identifier === joyId) {
+                    joyId = null;
+                    joystickKnob.style.transform = `translate(-50%, -50%)`;
+                    if (Module._setJoystick) Module._setJoystick(0, 0);
+                } else if (t.identifier === lookId) {
+                    lookId = null;
+                }
+            }
+        });
+
+        canvas.addEventListener('click', () => {
+            canvas.requestPointerLock();
+        });
+
+        const fpsEl = document.getElementById('fps');
+        const cpuEl = document.getElementById('cpu');
+        const resEl = document.getElementById('res');
+        const telDiv = document.getElementById('telemetry');
+        
+        window.updateTelemetry = function(fps, cpu, w, h) {
+            fpsEl.innerText = fps;
+            cpuEl.innerText = cpu.toFixed(3) + " ms";
+            resEl.innerText = `${w}x${h}`;
+            if (telDiv.style.display === 'none') telDiv.style.display = 'block';
+        };
+
+        var statusElement = document.getElementById('status');
+        var Module = {
+            preRun: [],
+            postRun: [],
+            print: (function() {
+                return function(text) {
+                    if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                    console.log(text);
+                };
+            })(),
+            canvas: (function() {
+                var canvas = document.getElementById('canvas');
+                canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+                return canvas;
+            })(),
+            setStatus: function(text) {
+                if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+                if (text === Module.setStatus.last.text) return;
+                var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+                var now = Date.now();
+                if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
+                Module.setStatus.last.time = now;
+                Module.setStatus.last.text = text;
+                if (m) {
+                    text = m[1];
+                }
+                statusElement.innerHTML = text;
+                if (text === "") {
+                    statusElement.style.display = 'none';
+                } else {
+                    statusElement.style.display = 'block';
+                }
+            },
+            totalDependencies: 0,
+            monitorRunDependencies: function(left) {
+                this.totalDependencies = Math.max(this.totalDependencies, left);
+                Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+            }
+        };
+        Module.setStatus('Downloading...');
+        window.onerror = function() {
+            Module.setStatus('Exception thrown, see JavaScript console');
+            Module.setStatus = function(text) {
+                if (text) Module.printErr('[post-exception status] ' + text);
+            };
+        };
+    </script>
+    <script async type="text/javascript" src="engine.js"></script>
+</body>
+</html>
