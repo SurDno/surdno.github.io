@@ -116,6 +116,7 @@
     <div id="telemetry" style="display: none;">
         <div class="telemetry-row"><span>FPS:</span> <span id="fps" class="telemetry-val">--</span></div>
         <div class="telemetry-row"><span>Frame Delta:</span> <span id="frame-delta" class="telemetry-val">-- ms</span></div>
+        <div class="telemetry-row"><span>Vertices:</span> <span id="vertices" class="telemetry-val">--</span></div>
         <div class="telemetry-row"><span>CPU Total:</span> <span id="cpu-total" class="telemetry-val">-- ms</span></div>
         <div class="telemetry-row"><span>Render:</span> <span id="cpu-render" class="telemetry-val">-- ms</span></div>
         <div class="telemetry-row"><span>GPU Total:</span> <span id="gpu-total" class="telemetry-val">-- ms</span></div>
@@ -178,7 +179,7 @@
         }
 
         window.addEventListener('touchstart', (e) => {
-            canvas.requestPointerLock();
+            if (canvas.requestPointerLock) canvas.requestPointerLock();
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
                 const rect = joystickBase.getBoundingClientRect();
@@ -226,14 +227,15 @@
         });
 
         canvas.addEventListener('click', () => {
-            canvas.requestPointerLock();
+            if (canvas.requestPointerLock) canvas.requestPointerLock();
         });
 
-        window.updateTelemetry = (fps, delta, cpuTotal, cpuRender, gpuTotal, w, h) => {
+        window.updateTelemetry = (fps, delta, vertices, cpuTotal, cpuRender, gpuTotal, w, h) => {
             const tel = document.getElementById('telemetry');
             if (tel.style.display === 'none') tel.style.display = 'block';
             document.getElementById('fps').textContent = fps;
             document.getElementById('frame-delta').textContent = delta.toFixed(2) + ' ms';
+            document.getElementById('vertices').textContent = vertices;
             document.getElementById('cpu-total').textContent = cpuTotal.toFixed(2) + ' ms';
             document.getElementById('cpu-render').textContent = cpuRender.toFixed(2) + ' ms';
             document.getElementById('gpu-total').textContent = gpuTotal.toFixed(2) + ' ms';
