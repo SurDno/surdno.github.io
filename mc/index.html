@@ -5,8 +5,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Web Mini Minecraft</title>
     <style>
-        body { margin: 0; background-color: black; color: white; font-family: sans-serif; overflow: hidden; width: 100vw; height: 100vh; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+        body { margin: 0; background-color: black; color: white; font-family: sans-serif; overflow: hidden; width: 100vw; height: 100vh; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+        canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
         #status { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); color: #aaa; pointer-events: none; }
         #telemetry {
             position: absolute; top: 15px; right: 15px; color: #4CAF50; background: rgba(0, 0, 0, 0.7);
@@ -66,6 +66,7 @@
     <div id="status">Touch to Start</div>
 
     <script type='text/javascript'>
+        window.addEventListener('contextmenu', e => e.preventDefault());
         function showError(msg) {
             document.getElementById('error-overlay').style.display = 'block';
             document.getElementById('error-text').textContent += msg + '\n';
@@ -126,14 +127,15 @@
                         isBreaking = true; 
                         if (Module._startBreaking) Module._startBreaking(t.clientX, t.clientY);
                         breakProgress.style.display = 'block';
-                        breakProgress.style.left = t.clientX + 'px';
-                        breakProgress.style.top = t.clientY + 'px';
                     }
                 }
 
                 if (isMoving) {
                     if (Module._handleMobileLook) Module._handleMobileLook(dx, dy);
-                } else if (isBreaking) {
+                }
+                
+                if (isBreaking) {
+                    if (Module._startBreaking) Module._startBreaking(t.clientX, t.clientY);
                     breakProgress.style.left = t.clientX + 'px';
                     breakProgress.style.top = t.clientY + 'px';
                 }
