@@ -5,133 +5,65 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Web Mini Minecraft</title>
     <style>
-        body {
-            margin: 0;
-            background-color: black;
-            color: white;
-            font-family: sans-serif;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-        }
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-        }
-        #status {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #aaa;
-            pointer-events: none;
-        }
+        body { margin: 0; background-color: black; color: white; font-family: sans-serif; overflow: hidden; width: 100vw; height: 100vh; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #status { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); color: #aaa; pointer-events: none; }
         #telemetry {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            color: #4CAF50;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            pointer-events: none;
-            z-index: 100;
-            border: 1px solid #333;
-            min-width: 180px;
-            font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+            position: absolute; top: 15px; right: 15px; color: #4CAF50; background: rgba(0, 0, 0, 0.7);
+            padding: 12px; border-radius: 6px; font-size: 0.8rem; pointer-events: none; z-index: 100;
+            border: 1px solid #333; min-width: 200px; font-family: monospace;
         }
-        .telemetry-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
-        }
+        .telemetry-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
         #joystick-base {
-            position: absolute;
-            bottom: 40px;
-            left: 40px;
-            width: 120px;
-            height: 120px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            touch-action: none;
-            z-index: 200;
-            display: none; /* Hide by default */
+            position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px;
+            background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%; touch-action: none; z-index: 200; display: none;
         }
         #joystick-knob {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
+            position: absolute; top: 50%; left: 50%; width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.5); border-radius: 50%; transform: translate(-50%, -50%);
             pointer-events: none;
         }
         #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-shadow: 1px 1px 2px black;
+            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
+            color: white; font-size: 24px; transform: translate(-50%, -50%);
+            pointer-events: none; display: flex; align-items: center; justify-content: center;
         }
+        @media (pointer: coarse) { #crosshair { display: none; } }
+        
         #error-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(139, 0, 0, 0.95);
-            color: #fff;
-            padding: 40px;
-            box-sizing: border-box;
-            font-family: 'Courier New', Courier, monospace;
-            display: none;
-            z-index: 10000;
-            overflow-y: auto;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(139, 0, 0, 0.95);
+            color: #fff; padding: 40px; box-sizing: border-box; font-family: monospace; display: none; z-index: 10000;
         }
-        #error-overlay h1 { color: #ffeb3b; margin-top: 0; }
-        #error-overlay pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; white-space: pre-wrap; }
+        #break-progress {
+            position: absolute; width: 60px; height: 60px; border-radius: 50%;
+            border: 4px solid rgba(255,255,255,0.3); border-top-color: #fff;
+            display: none; pointer-events: none; z-index: 300; transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body>
     <div id="error-overlay">
         <h1>CRITICAL ERROR</h1>
-        <p>The application has crashed. Technical details below:</p>
         <pre id="error-text"></pre>
-        <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer;">Reload Application</button>
+        <button onclick="location.reload()">Reload</button>
     </div>
 
     <div id="telemetry" style="display: none;">
-        <div class="telemetry-row"><span>FPS:</span> <span id="fps" class="telemetry-val">--</span></div>
-        <div class="telemetry-row"><span>Frame Delta:</span> <span id="frame-delta" class="telemetry-val">-- ms</span></div>
-        <div class="telemetry-row"><span>Vertices:</span> <span id="vertices" class="telemetry-val">--</span></div>
-        <div class="telemetry-row"><span>CPU Total:</span> <span id="cpu-total" class="telemetry-val">-- ms</span></div>
-        <div class="telemetry-row"><span>Render:</span> <span id="cpu-render" class="telemetry-val">-- ms</span></div>
-        <div class="telemetry-row"><span>GPU Total:</span> <span id="gpu-total" class="telemetry-val">-- ms</span></div>
-        <div class="telemetry-row"><span>Resolution:</span> <span id="res" class="telemetry-val">--</span></div>
+        <div class="telemetry-row"><span>FPS:</span> <span id="fps">--</span></div>
+        <div class="telemetry-row"><span>Delta:</span> <span id="delta">--</span></div>
+        <div class="telemetry-row"><span>Renderer:</span> <span id="renderer" style="font-size:0.6rem">--</span></div>
+        <div class="telemetry-row"><span>Vendor:</span> <span id="vendor" style="font-size:0.6rem">--</span></div>
+        <div class="telemetry-row"><span>Vertices:</span> <span id="verts">--</span></div>
+        <div class="telemetry-row"><span>CPU:</span> <span id="cpu">--</span></div>
     </div>
     
     <div id="crosshair">+</div>
-
-    <div id="joystick-base">
-        <div id="joystick-knob"></div>
-    </div>
+    <div id="joystick-base"><div id="joystick-knob"></div></div>
+    <div id="break-progress"></div>
 
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
-    <div id="status">Click/Touch to Start</div>
+    <div id="status">Touch to Start</div>
 
     <script type='text/javascript'>
         function showError(msg) {
@@ -139,67 +71,42 @@
             document.getElementById('error-text').textContent += msg + '\n';
         }
 
-        window.onerror = (msg, url, line, col, error) => {
-            showError(`[JS Error] ${msg}\nAt: ${url}:${line}:${col}\n${error ? error.stack : ''}`);
-            return false;
-        };
-
-        window.onunhandledrejection = (event) => {
-            showError(`[Promise Rejection] ${event.reason}`);
-        };
-
         const canvas = document.getElementById('canvas');
         const joystickBase = document.getElementById('joystick-base');
         const joystickKnob = document.getElementById('joystick-knob');
+        const breakProgress = document.getElementById('break-progress');
         
-        let joyActive = false;
-        let joyId = null;
-        let lookId = null;
-        let lastLookX = 0;
-        let lastLookY = 0;
-        let touchStartTime = 0;
-        let touchStartId = null;
+        let joyId = null, lookId = null;
+        let lastLookX = 0, lastLookY = 0;
+        let touchStartPos = {x:0, y:0}, touchStartTime = 0;
+        let isMoving = false, isBreaking = false;
 
         function handleJoystick(e) {
             const rect = joystickBase.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
+            const centerX = rect.left + rect.width / 2, centerY = rect.top + rect.height / 2;
             const touch = Array.from(e.touches).find(t => t.identifier === joyId);
             if (!touch) return;
-
-            let dx = touch.clientX - centerX;
-            let dy = touch.clientY - centerY;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            const maxDist = rect.width / 2;
-
-            if (dist > maxDist) {
-                dx *= maxDist / dist;
-                dy *= maxDist / dist;
-            }
-
+            let dx = touch.clientX - centerX, dy = touch.clientY - centerY;
+            const dist = Math.sqrt(dx*dx + dy*dy), maxDist = rect.width / 2;
+            if (dist > maxDist) { dx *= maxDist / dist; dy *= maxDist / dist; }
             joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
             if (Module._setJoystick) Module._setJoystick(dx / maxDist, dy / maxDist);
         }
 
         window.addEventListener('touchstart', (e) => {
-            joystickBase.style.display = 'block'; // Show on first touch
+            joystickBase.style.display = 'block';
             if (canvas.requestPointerLock) canvas.requestPointerLock();
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
                 const rect = joystickBase.getBoundingClientRect();
                 if (t.clientX >= rect.left && t.clientX <= rect.right && t.clientY >= rect.top && t.clientY <= rect.bottom) {
-                    if (joyId === null) {
-                        joyId = t.identifier;
-                        handleJoystick(e);
-                    }
-                } else {
-                    if (lookId === null) {
-                        lookId = t.identifier;
-                        lastLookX = t.clientX;
-                        lastLookY = t.clientY;
-                        touchStartTime = Date.now();
-                        touchStartId = t.identifier;
-                    }
+                    if (joyId === null) { joyId = t.identifier; handleJoystick(e); }
+                } else if (lookId === null) {
+                    lookId = t.identifier;
+                    lastLookX = t.clientX; lastLookY = t.clientY;
+                    touchStartPos = {x: t.clientX, y: t.clientY};
+                    touchStartTime = Date.now();
+                    isMoving = false; isBreaking = false;
                 }
             }
         });
@@ -207,14 +114,30 @@
         window.addEventListener('touchmove', (e) => {
             e.preventDefault();
             handleJoystick(e);
-            
-            const lookTouch = Array.from(e.touches).find(t => t.identifier === lookId);
-            if (lookTouch) {
-                const dx = lookTouch.clientX - lastLookX;
-                const dy = lookTouch.clientY - lastLookY;
-                lastLookX = lookTouch.clientX;
-                lastLookY = lookTouch.clientY;
-                if (Module._handleMobileLook) Module._handleMobileLook(dx, dy);
+            const t = Array.from(e.touches).find(t => t.identifier === lookId);
+            if (t) {
+                const dx = t.clientX - lastLookX, dy = t.clientY - lastLookY;
+                const distFromStart = Math.sqrt((t.clientX-touchStartPos.x)**2 + (t.clientY-touchStartPos.y)**2);
+                const timeElapsed = Date.now() - touchStartTime;
+
+                if (!isMoving && !isBreaking) {
+                    if (distFromStart > 10 && timeElapsed < 100) { isMoving = true; }
+                    else if (timeElapsed >= 100 && distFromStart < 15) { 
+                        isBreaking = true; 
+                        if (Module._startBreaking) Module._startBreaking(t.clientX, t.clientY);
+                        breakProgress.style.display = 'block';
+                        breakProgress.style.left = t.clientX + 'px';
+                        breakProgress.style.top = t.clientY + 'px';
+                    }
+                }
+
+                if (isMoving) {
+                    if (Module._handleMobileLook) Module._handleMobileLook(dx, dy);
+                } else if (isBreaking) {
+                    breakProgress.style.left = t.clientX + 'px';
+                    breakProgress.style.top = t.clientY + 'px';
+                }
+                lastLookX = t.clientX; lastLookY = t.clientY;
             }
         }, { passive: false });
 
@@ -222,94 +145,44 @@
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
                 if (t.identifier === joyId) {
-                    joyId = null;
-                    joystickKnob.style.transform = `translate(-50%, -50%)`;
+                    joyId = null; joystickKnob.style.transform = `translate(-50%, -50%)`;
                     if (Module._setJoystick) Module._setJoystick(0, 0);
                 } else if (t.identifier === lookId) {
-                    if (t.identifier === touchStartId) {
-                        const duration = Date.now() - touchStartTime;
-                        if (Module._handleRaycast) Module._handleRaycast(duration < 500);
+                    const timeElapsed = Date.now() - touchStartTime;
+                    const distFromStart = Math.sqrt((t.clientX-touchStartPos.x)**2 + (t.clientY-touchStartPos.y)**2);
+                    if (!isMoving && !isBreaking && timeElapsed < 150 && distFromStart < 10) {
+                        if (Module._placeBlock) Module._placeBlock(t.clientX, t.clientY);
                     }
-                    lookId = null;
-                    touchStartId = null;
+                    if (isBreaking) {
+                        if (Module._stopBreaking) Module._stopBreaking();
+                        breakProgress.style.display = 'none';
+                    }
+                    lookId = null; isMoving = false; isBreaking = false;
                 }
             }
         });
 
-        canvas.addEventListener('click', () => {
-            if (canvas.requestPointerLock) canvas.requestPointerLock();
-        });
-
-        window.updateTelemetry = (fps, delta, vertices, cpuTotal, cpuRender, gpuTotal, w, h) => {
-            const tel = document.getElementById('telemetry');
-            if (tel.style.display === 'none') tel.style.display = 'block';
-            document.getElementById('fps').textContent = fps;
-            document.getElementById('frame-delta').textContent = delta.toFixed(2) + ' ms';
-            document.getElementById('vertices').textContent = vertices;
-            document.getElementById('cpu-total').textContent = cpuTotal.toFixed(2) + ' ms';
-            document.getElementById('cpu-render').textContent = cpuRender.toFixed(2) + ' ms';
-            document.getElementById('gpu-total').textContent = gpuTotal.toFixed(2) + ' ms';
-            document.getElementById('res').textContent = `${w}x${h}`;
+        window.updateTelemetry = (fps, delta, verts, cpu, render, w, h, renderer, vendor, progress) => {
+            document.getElementById('telemetry').style.display = 'block';
+            document.getElementById('fps').textContent = Math.round(fps);
+            document.getElementById('delta').textContent = delta.toFixed(1) + 'ms';
+            document.getElementById('verts').textContent = verts;
+            document.getElementById('cpu').textContent = cpu.toFixed(2) + 'ms';
+            document.getElementById('renderer').textContent = renderer;
+            document.getElementById('vendor').textContent = vendor;
+            if (isBreaking) {
+                breakProgress.style.transform = `translate(-50%, -50%) rotate(${progress * 360}deg)`;
+            }
         };
 
-        var statusElement = document.getElementById('status');
         var Module = {
-            preRun: [],
-            postRun: [],
-            print: (function() {
-                return function(text) {
-                    if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-                    console.log(text);
-                };
-            })(),
-            printErr: function(text) {
-                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-                console.error(text);
-                if (text.includes('Exception thrown') || text.includes('Error')) {
-                    showError(`[Runtime Error] ${text}`);
-                }
-            },
-            canvas: (function() {
-                var canvas = document.getElementById('canvas');
-                canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
-                return canvas;
-            })(),
-            setStatus: function(text) {
-                if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
-                if (text === Module.setStatus.last.text) return;
-                var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
-                var now = Date.now();
-                if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
-                Module.setStatus.last.time = now;
-                Module.setStatus.last.text = text;
-                if (m) {
-                    text = m[1];
-                }
-                statusElement.innerHTML = text;
-                if (text === "") {
-                    statusElement.style.display = 'none';
-                } else {
-                    statusElement.style.display = 'block';
-                }
-                if (text.includes('Exception thrown')) {
-                    showError(`[Module Status] ${text}`);
-                }
-            },
-            totalDependencies: 0,
-            monitorRunDependencies: function(left) {
-                this.totalDependencies = Math.max(this.totalDependencies, left);
-                Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
-            }
-        };
-        Module.setStatus('Downloading...');
-        window.onerror = function(msg) {
-            Module.setStatus('Exception thrown, see JavaScript console');
-            showError(`[Global Exception] ${msg}`);
-            Module.setStatus = function(text) {
-                if (text) Module.printErr('[post-exception status] ' + text);
-            };
+            preRun: [], postRun: [],
+            print: console.log,
+            printErr: showError,
+            canvas: canvas,
+            setStatus: (t) => { document.getElementById('status').textContent = t; if(!t) document.getElementById('status').style.display='none'; }
         };
     </script>
-    <script async type="text/javascript" src="engine.js"></script>
+    <script async src="engine.js"></script>
 </body>
 </html>
